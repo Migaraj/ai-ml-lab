@@ -1,0 +1,508 @@
+import { useState } from "react";
+import {
+  BarChart, Bar, LineChart, Line, RadarChart, Radar,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell, ScatterChart,
+  Scatter, ZAxis
+} from "recharts";
+ 
+// ── DATA ─────────────────────────────────────────────────────────
+const matchData = [
+  { match: "M1", runs: 187, wickets: 6, economy: 9.2, nrr: 1.2 },
+  { match: "M2", runs: 142, wickets: 8, economy: 7.8, nrr: -0.4 },
+  { match: "M3", runs: 201, wickets: 4, economy: 10.1, nrr: 2.1 },
+  { match: "M4", runs: 165, wickets: 7, economy: 8.4, nrr: 0.3 },
+  { match: "M5", runs: 219, wickets: 3, economy: 11.2, nrr: 3.1 },
+  { match: "M6", runs: 178, wickets: 5, economy: 9.0, nrr: 0.8 },
+  { match: "M7", runs: 156, wickets: 9, economy: 7.9, nrr: -1.2 },
+  { match: "M8", runs: 193, wickets: 4, economy: 9.8, nrr: 1.6 },
+];
+ 
+const topBatsmen = [
+  { name: "V. Kohli",    runs: 741, avg: 61.8, sr: 148.2, fours: 62, sixes: 28 },
+  { name: "R. Sharma",   runs: 689, avg: 49.2, sr: 141.6, fours: 71, sixes: 31 },
+  { name: "S. Iyer",     runs: 612, avg: 43.7, sr: 152.4, fours: 54, sixes: 26 },
+  { name: "KL Rahul",    runs: 584, avg: 48.7, sr: 135.8, fours: 58, sixes: 19 },
+  { name: "H. Pandya",   runs: 521, avg: 37.2, sr: 158.1, fours: 41, sixes: 34 },
+];
+ 
+const topBowlers = [
+  { name: "J. Bumrah",   wkts: 24, eco: 6.8, avg: 18.4, dots: 142 },
+  { name: "Y. Chahal",   wkts: 21, eco: 7.9, avg: 22.1, dots: 118 },
+  { name: "R. Jadeja",   wkts: 18, eco: 7.2, avg: 24.6, dots: 131 },
+  { name: "M. Shami",    wkts: 17, eco: 8.1, avg: 26.3, dots: 109 },
+  { name: "A. Mishra",   wkts: 15, eco: 8.6, avg: 28.7, dots: 96  },
+];
+ 
+const radarData = [
+  { stat: "Batting", MI: 88, CSK: 82, RCB: 91, DC: 74 },
+  { stat: "Bowling", MI: 85, CSK: 88, RCB: 72, DC: 80 },
+  { stat: "Fielding", MI: 79, CSK: 76, RCB: 68, DC: 82 },
+  { stat: "PowerPlay", MI: 91, CSK: 78, RCB: 84, DC: 71 },
+  { stat: "DeathOvers", MI: 87, CSK: 90, RCB: 76, DC: 73 },
+  { stat: "Middle Ovs", MI: 83, CSK: 85, RCB: 79, DC: 77 },
+];
+ 
+const phaseData = [
+  { phase: "PP (1-6)",    runs: 58, wickets: 2.1, boundaryPct: 42 },
+  { phase: "Mid (7-15)",  runs: 72, wickets: 2.8, boundaryPct: 28 },
+  { phase: "Death (16-20)", runs: 67, wickets: 3.1, boundaryPct: 51 },
+];
+ 
+const venueData = [
+  { venue: "Wankhede", avgScore: 192, chaseWins: 6, defWins: 8 },
+  { venue: "Chepauk",  avgScore: 162, chaseWins: 9, defWins: 5 },
+  { venue: "Eden Grdns", avgScore: 178, chaseWins: 7, defWins: 7 },
+  { venue: "Chinnaswamy", avgScore: 198, chaseWins: 8, defWins: 6 },
+  { venue: "Kotla",   avgScore: 171, chaseWins: 7, defWins: 7 },
+];
+ 
+const partnershipData = [
+  { x: 1, y: 89,  z: 8,  pair: "Kohli-Sharma" },
+  { x: 2, y: 142, z: 12, pair: "Kohli-Iyer" },
+  { x: 3, y: 67,  z: 6,  pair: "Rahul-Pandya" },
+  { x: 4, y: 118, z: 10, pair: "Sharma-Rahul" },
+  { x: 5, y: 94,  z: 9,  pair: "Iyer-Pandya" },
+];
+ 
+const TEAM_COLORS = {
+  MI:  "#004BA0", CSK: "#F5A623",
+  RCB: "#C41E3A", DC:  "#1B60A8"
+};
+ 
+// ── COMPONENTS ──────────────────────────────────────────────────
+const StatPill = ({ label, value, color = "#00E5A0" }) => (
+  <div style={{
+    background: `linear-gradient(135deg, ${color}12, ${color}06)`,
+    border: `1px solid ${color}30`,
+    borderRadius: 8, padding: "14px 18px",
+    display: "flex", flexDirection: "column", gap: 4,
+  }}>
+    <div style={{ color: "#8899aa", fontSize: 10, letterSpacing: 1.4,
+                  textTransform: "uppercase", fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: 2 }}>{label}</div>
+    <div style={{ color: "#F0F4FF", fontSize: 24, fontWeight: 900,
+                  fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>{value}</div>
+  </div>
+);
+ 
+const Card = ({ title, subtitle, children, style = {} }) => (
+  <div style={{
+    background: "linear-gradient(160deg, #0d1520 0%, #0a1018 100%)",
+    border: "1px solid #1a2535",
+    borderRadius: 12, padding: 18,
+    ...style,
+  }}>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ color: "#F0F4FF", fontSize: 13, fontWeight: 800,
+                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 2,
+                    textTransform: "uppercase" }}>{title}</div>
+      {subtitle && <div style={{ color: "#4a6070", fontSize: 10, marginTop: 2 }}>{subtitle}</div>}
+    </div>
+    {children}
+  </div>
+);
+ 
+const CustomTip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: "#0d1520", border: "1px solid #1a2535",
+                  borderRadius: 8, padding: "8px 12px", fontSize: 11 }}>
+      <div style={{ color: "#8899aa", marginBottom: 4 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color, margin: "2px 0" }}>
+          {p.name}: <span style={{ color: "#F0F4FF", fontWeight: 700 }}>{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+ 
+// ── MAIN ─────────────────────────────────────────────────────────
+export default function CricketDashboard() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [hoveredBat, setHoveredBat] = useState(null);
+ 
+  return (
+    <div style={{
+      background: "#060d14",
+      minHeight: "100vh",
+      fontFamily: "'DM Sans', sans-serif",
+      color: "#F0F4FF",
+      backgroundImage: `
+        radial-gradient(ellipse at 10% 20%, #00E5A008 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 80%, #FF6B2B08 0%, transparent 50%)
+      `,
+    }}>
+ 
+      {/* ── HEADER ── */}
+      <div style={{
+        background: "linear-gradient(90deg, #060d14 0%, #0a1520 50%, #060d14 100%)",
+        borderBottom: "1px solid #1a2535",
+        padding: "0 24px",
+        height: 56,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: "linear-gradient(135deg, #FF6B2B, #FF3D00)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20,
+          }}>🏏</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#F0F4FF",
+                          fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 2 }}>
+              IPL ANALYTICS
+            </div>
+            <div style={{ fontSize: 9, color: "#3a5060", letterSpacing: 1.5,
+                          textTransform: "uppercase" }}>
+              Season 2024 · Performance Intelligence
+            </div>
+          </div>
+        </div>
+ 
+        <div style={{ display: "flex", gap: 4 }}>
+          {["Overview", "Batting", "Bowling", "Venues"].map((t, i) => (
+            <button key={t} onClick={() => setActiveTab(t.toLowerCase())}
+              style={{
+                background: activeTab === t.toLowerCase() ? "#FF6B2B18" : "transparent",
+                border: activeTab === t.toLowerCase() ? "1px solid #FF6B2B40" : "1px solid transparent",
+                color: activeTab === t.toLowerCase() ? "#FF6B2B" : "#4a6070",
+                padding: "5px 14px", borderRadius: 6, fontSize: 11,
+                fontWeight: 700, cursor: "pointer",
+                fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5,
+              }}>{t}</button>
+          ))}
+        </div>
+ 
+        <div style={{ fontSize: 10, color: "#3a5060" }}>
+          📅 IPL 2024 · 74 matches · Apr 25, 2026
+        </div>
+      </div>
+ 
+      <div style={{ padding: "20px 24px" }}>
+ 
+        {/* ── HERO ── */}
+        <div style={{ display: "flex", justifyContent: "space-between",
+                      alignItems: "flex-end", marginBottom: 18 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#F0F4FF",
+                         fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 3 }}>
+              SEASON PERFORMANCE DASHBOARD
+            </h1>
+            <p style={{ margin: "3px 0 0", color: "#3a5060", fontSize: 11 }}>
+              Full tournament analysis · 10 teams · 74 matches · 4,892 runs analysed
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ background: "#00E5A015", border: "1px solid #00E5A040",
+                          borderRadius: 6, padding: "5px 12px",
+                          fontSize: 10, color: "#00E5A0", fontWeight: 800,
+                          fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5 }}>
+              🏆 MI CHAMPIONS
+            </div>
+            <div style={{ background: "#FF6B2B15", border: "1px solid #FF6B2B40",
+                          borderRadius: 6, padding: "5px 12px",
+                          fontSize: 10, color: "#FF6B2B", fontWeight: 800,
+                          fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5 }}>
+              🏅 V.KOHLI ORANGE CAP
+            </div>
+          </div>
+        </div>
+ 
+        {/* ── KPI STRIP ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)",
+                      gap: 10, marginBottom: 16 }}>
+          <StatPill label="Total Sixes"     value="866"    color="#FF6B2B" />
+          <StatPill label="Avg Match Score" value="179.4"  color="#00E5A0" />
+          <StatPill label="Highest Score"   value="287/2"  color="#FFD700" />
+          <StatPill label="Purple Cap"      value="Bumrah" color="#A855F7" />
+          <StatPill label="Dot Ball %"      value="34.2%"  color="#4a90d9" />
+          <StatPill label="Super Overs"     value="3"      color="#FF4655" />
+        </div>
+ 
+        {/* ── ROW 1 ── */}
+        <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+ 
+          {/* Match-by-match runs */}
+          <Card title="Match Scores — Tournament Arc"
+                subtitle="Runs scored per match · wickets overlay"
+                style={{ flex: 3 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={matchData}>
+                <defs>
+                  <linearGradient id="runsGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#FF6B2B" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#FF6B2B" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
+                <XAxis dataKey="match" tick={{ fill: "#4a6070", fontSize: 10 }}
+                       axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#4a6070", fontSize: 10 }} axisLine={false}
+                       tickLine={false} domain={[120, 240]} />
+                <Tooltip content={<CustomTip />} />
+                <Area type="monotone" dataKey="runs" name="Runs"
+                      stroke="#FF6B2B" fill="url(#runsGrad)" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="economy" name="Economy"
+                      stroke="#00E5A0" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+ 
+          {/* Phase analysis */}
+          <Card title="Game Phase Breakdown"
+                subtitle="Runs, wickets and boundary % per phase"
+                style={{ flex: 2 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={phaseData} barSize={28}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
+                <XAxis dataKey="phase" tick={{ fill: "#4a6070", fontSize: 10 }}
+                       axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#4a6070", fontSize: 10 }} axisLine={false}
+                       tickLine={false} />
+                <Tooltip content={<CustomTip />} />
+                <Bar dataKey="runs" name="Avg Runs" radius={[4,4,0,0]}>
+                  {phaseData.map((_, i) => (
+                    <Cell key={i}
+                      fill={["#FF6B2B","#FFD700","#FF3D00"][i]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", gap: 10, marginTop: 8, justifyContent: "center" }}>
+              {phaseData.map((p, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "#4a6070" }}>{p.phase}</div>
+                  <div style={{ fontSize: 11, color: "#00E5A0", fontWeight: 700 }}>
+                    {p.boundaryPct}% boundary
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+ 
+        {/* ── ROW 2 ── */}
+        <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+ 
+          {/* Top batsmen */}
+          <Card title="Orange Cap Race — Top 5 Batsmen"
+                subtitle="Hover a row for split stats"
+                style={{ flex: 2 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1a2535" }}>
+                  {["#","Batsman","Runs","Avg","SR","4s","6s"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "6px 8px",
+                                        color: "#3a5060", fontSize: 9,
+                                        fontFamily: "'Bebas Neue', sans-serif",
+                                        letterSpacing: 1.5 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {topBatsmen.map((p, i) => (
+                  <tr key={i}
+                    onMouseEnter={() => setHoveredBat(i)}
+                    onMouseLeave={() => setHoveredBat(null)}
+                    style={{
+                      borderBottom: "1px solid #0d1520",
+                      background: hoveredBat === i ? "#FF6B2B08" : "transparent",
+                      transition: "background 0.15s", cursor: "pointer",
+                    }}>
+                    <td style={{ padding: "10px 8px", color: "#3a5060",
+                                 fontSize: 12, fontWeight: 800 }}>{i+1}</td>
+                    <td style={{ padding: "10px 8px", color: "#F0F4FF",
+                                 fontSize: 12, fontWeight: 700 }}>{p.name}</td>
+                    <td style={{ padding: "10px 8px", color: "#FF6B2B",
+                                 fontSize: 12, fontWeight: 800 }}>{p.runs}</td>
+                    <td style={{ padding: "10px 8px", color: "#8899aa",
+                                 fontSize: 12 }}>{p.avg}</td>
+                    <td style={{ padding: "10px 8px" }}>
+                      <span style={{
+                        background: p.sr > 150 ? "#00E5A020" : "#FFD70020",
+                        color: p.sr > 150 ? "#00E5A0" : "#FFD700",
+                        padding: "2px 7px", borderRadius: 4,
+                        fontSize: 11, fontWeight: 700,
+                      }}>{p.sr}</span>
+                    </td>
+                    <td style={{ padding: "10px 8px", color: "#4a6070",
+                                 fontSize: 11 }}>{p.fours}</td>
+                    <td style={{ padding: "10px 8px", color: "#FF6B2B",
+                                 fontSize: 11, fontWeight: 700 }}>{p.sixes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+ 
+          {/* Radar — team comparison */}
+          <Card title="Team Capability Radar"
+                subtitle="MI · CSK · RCB · DC — six performance axes"
+                style={{ flex: 1 }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#1a2535" />
+                <PolarAngleAxis dataKey="stat"
+                  tick={{ fill: "#4a6070", fontSize: 9 }} />
+                <PolarRadiusAxis domain={[60, 100]} tick={false} axisLine={false} />
+                {Object.entries(TEAM_COLORS).map(([team, color]) => (
+                  <Radar key={team} name={team} dataKey={team}
+                    stroke={color} fill={color} fillOpacity={0.12}
+                    strokeWidth={1.5} />
+                ))}
+                <Tooltip contentStyle={{ background: "#0d1520",
+                  border: "1px solid #1a2535", borderRadius: 8, fontSize: 11 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center",
+                          flexWrap: "wrap", marginTop: 4 }}>
+              {Object.entries(TEAM_COLORS).map(([t, c]) => (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%",
+                                background: c }} />
+                  <span style={{ fontSize: 10, color: "#4a6070" }}>{t}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+ 
+          {/* Bowlers */}
+          <Card title="Purple Cap Race"
+                subtitle="Top 5 wicket takers · economy rates"
+                style={{ flex: 1.2 }}>
+            {topBowlers.map((b, i) => {
+              const pct = Math.round((b.wkts / 24) * 100);
+              return (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between",
+                                marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: "#F0F4FF",
+                                   fontWeight: 600 }}>{b.name}</span>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#4a6070" }}>
+                        Eco: {b.eco}
+                      </span>
+                      <span style={{ fontSize: 12, color: "#A855F7",
+                                     fontWeight: 800 }}>{b.wkts}w</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 5, background: "#1a2535",
+                                borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", width: `${pct}%`,
+                      background: `linear-gradient(90deg, #A855F7, #7C3AED)`,
+                      borderRadius: 3,
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </div>
+ 
+        {/* ── ROW 3 ── */}
+        <div style={{ display: "flex", gap: 14 }}>
+ 
+          {/* Venue analysis */}
+          <Card title="Venue Intelligence"
+                subtitle="Average scores and result trends by ground"
+                style={{ flex: 2 }}>
+            <ResponsiveContainer width="100%" height={190}>
+              <BarChart data={venueData} barSize={18} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
+                <XAxis dataKey="venue" tick={{ fill: "#4a6070", fontSize: 9 }}
+                       axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#4a6070", fontSize: 9 }} axisLine={false}
+                       tickLine={false} domain={[140, 210]} />
+                <Tooltip content={<CustomTip />} />
+                <Bar dataKey="avgScore"   name="Avg Score"  fill="#FF6B2B" radius={[3,3,0,0]} />
+                <Bar dataKey="chaseWins"  name="Chase Wins" fill="#00E5A0" radius={[3,3,0,0]} />
+                <Bar dataKey="defWins"    name="Def Wins"   fill="#4a90d9" radius={[3,3,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+ 
+          {/* Partnership scatter */}
+          <Card title="Key Partnerships"
+                subtitle="Runs scored · bubble size = matches together"
+                style={{ flex: 1.5 }}>
+            <ResponsiveContainer width="100%" height={190}>
+              <ScatterChart>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" />
+                <XAxis dataKey="x" tick={false} axisLine={false} tickLine={false} />
+                <YAxis dataKey="y" tick={{ fill: "#4a6070", fontSize: 9 }}
+                       axisLine={false} tickLine={false}
+                       label={{ value: "Runs", angle: -90, position: "insideLeft",
+                                fill: "#3a5060", fontSize: 9 }} />
+                <ZAxis dataKey="z" range={[60, 300]} />
+                <Tooltip cursor={false}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0]?.payload;
+                    return (
+                      <div style={{ background: "#0d1520",
+                                    border: "1px solid #1a2535",
+                                    borderRadius: 8, padding: "8px 12px",
+                                    fontSize: 11 }}>
+                        <div style={{ color: "#FF6B2B", fontWeight: 700 }}>{d?.pair}</div>
+                        <div style={{ color: "#8899aa" }}>Runs: {d?.y}</div>
+                      </div>
+                    );
+                  }} />
+                <Scatter data={partnershipData} fill="#FF6B2B" fillOpacity={0.8} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </Card>
+ 
+          {/* Season summary card */}
+          <Card title="Season Summary" subtitle="Key tournament numbers" style={{ flex: 1 }}>
+            {[
+              ["Matches Played",  "74",     "#F0F4FF"],
+              ["Total Runs",      "28,441", "#FF6B2B"],
+              ["Total Wickets",   "684",    "#A855F7"],
+              ["No-balls called", "47",     "#FF4655"],
+              ["Sixes hit",       "866",    "#FFD700"],
+              ["Century scored",  "9",      "#00E5A0"],
+              ["Super Overs",     "3",      "#4a90d9"],
+            ].map(([l, v, c]) => (
+              <div key={l} style={{ display: "flex", justifyContent: "space-between",
+                                    padding: "7px 0",
+                                    borderBottom: "1px solid #0d1520" }}>
+                <span style={{ fontSize: 11, color: "#4a6070" }}>{l}</span>
+                <span style={{ fontSize: 12, color: c, fontWeight: 800,
+                               fontFamily: "'Bebas Neue', sans-serif",
+                               letterSpacing: 1 }}>{v}</span>
+              </div>
+            ))}
+          </Card>
+        </div>
+ 
+        {/* FOOTER */}
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between",
+                      alignItems: "center", padding: "10px 0",
+                      borderTop: "1px solid #1a2535" }}>
+          <span style={{ fontSize: 9, color: "#1a2535",
+                         fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 2 }}>
+            IPL ANALYTICS PLATFORM · SEASON 2024 · ALL STATS PROVISIONAL
+          </span>
+          <div style={{ display: "flex", gap: 18 }}>
+            {[
+              ["Highest Partnership", "206 — Kohli & de Villiers"],
+              ["Best Bowling",        "6/14 — Bumrah vs CSK"],
+              ["Fastest 50",          "14 balls — Pandya"],
+            ].map(([l, v]) => (
+              <div key={l} style={{ fontSize: 9, textAlign: "right" }}>
+                <span style={{ color: "#2a3a4a" }}>{l}: </span>
+                <span style={{ color: "#FF6B2B", fontWeight: 700 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
